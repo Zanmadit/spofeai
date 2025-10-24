@@ -3,30 +3,31 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction, SystemProgram } from "@solana/web3.js";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
-export default function PredictionDisplay() {
+export default function App() {
   const [homeTeam, setHomeTeam] = useState("");
   const [awayTeam, setAwayTeam] = useState("");
   const [prediction, setPrediction] = useState("");
+  const [loading, setLoading] = useState(false);
   const { publicKey, sendTransaction } = useWallet();
   const { connection } = useConnection();
 
-  // 🔮 Получаем прогноз от FastAPI
   async function handlePredict() {
+    setLoading(true);
     try {
       const res = await fetch("http://localhost:8000/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ home_team: homeTeam, away_team: awayTeam })
+        body: JSON.stringify({ home_team: homeTeam, away_team: awayTeam }),
       });
       const data = await res.json();
       setPrediction(data.prediction);
     } catch (err) {
       console.error(err);
-      alert("❌ Failed to fetch prediction");
+      alert("Failed to fetch prediction");
     }
+    setLoading(false);
   }
 
-  // 💸 Отправка SOL на devnet как "ставка"
   async function handlePlaceBet() {
     if (!publicKey) {
       alert("Connect your Phantom Wallet first!");
@@ -36,68 +37,74 @@ export default function PredictionDisplay() {
     const transaction = new Transaction().add(
       SystemProgram.transfer({
         fromPubkey: publicKey,
-        toPubkey: new PublicKey("FILL_IN_RECEIVER_ADDRESS"), // <-- сюда твой кошелек / контракт
-        lamports: 0.01 * 1e9 // 0.01 SOL
+        toPubkey: publicKey, 
+        lamports: 0.01 * 1e9, 
       })
     );
 
     try {
       const signature = await sendTransaction(transaction, connection);
-      await connection.confirmTransaction(signature, "processed");
-      alert("✅ Bet sent! Signature: " + signature);
+
+      const latestBlockhash = await connection.getLatestBlockhash();
+      await connection.confirmTransaction({
+        signature,
+        blockhash: latestBlockhash.blockhash,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+      });
+
+      alert("Bet sent! Signature: " + signature);
     } catch (err) {
       console.error(err);
-      alert("❌ Transaction failed");
+      alert("Transaction failed");
     }
   }
 
+
   return (
-    <div className="flex flex-col items-center p-8 bg-white rounded-xl shadow-lg max-w-md mx-auto mt-10">
-      <h1 className="text-3xl font-bold mb-6 text-blue-700">⚽ SportFi Predictor</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700 p-6">
+      <div className="w-full max-w-md bg-gray-900 rounded-3xl shadow-2xl p-8 space-y-6">
+        <h1 className="text-3xl font-bold text-yellow-400 text-center">Spofeai</h1>
 
-      {/* 🔑 Кнопка подключения Phantom Wallet */}
-      <WalletMultiButton className="mb-4 w-full" />
+        <div className="w-full flex justify-center">
+          <WalletMultiButton className="bg-gradient-to-r from-yellow-500 to-red-500 text-black font-bold py-3 px-6 rounded-xl transition-all duration-200" />
+        </div>
 
-      {publicKey && (
-        <p className="text-sm text-gray-600 mb-4">
-          Connected wallet: {publicKey.toBase58()}
-        </p>
-      )}
+        <div className="flex flex-col gap-4">
+          <input
+            className="p-3 rounded-xl bg-gray-800/50 placeholder-gray-400 text-white focus:ring-2 focus:ring-yellow-400 outline-none w-full"
+            placeholder="Home team"
+            value={homeTeam}
+            onChange={(e) => setHomeTeam(e.target.value)}
+          />
+          <input
+            className="p-3 rounded-xl bg-gray-800/50 placeholder-gray-400 text-white focus:ring-2 focus:ring-yellow-400 outline-none w-full"
+            placeholder="Away team"
+            value={awayTeam}
+            onChange={(e) => setAwayTeam(e.target.value)}
+          />
+        </div>
 
-      <div className="flex gap-2 w-full">
-        <input
-          className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          placeholder="Home team"
-          value={homeTeam}
-          onChange={(e) => setHomeTeam(e.target.value)}
-        />
-        <input
-          className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          placeholder="Away team"
-          value={awayTeam}
-          onChange={(e) => setAwayTeam(e.target.value)}
-        />
+        <button
+          onClick={handlePredict}
+          disabled={loading}
+          className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl font-bold hover:scale-105 transform transition duration-200 disabled:opacity-50"
+        >
+          {loading ? "Predicting..." : "Predict"}
+        </button>
+
+        {prediction && (
+          <p className="text-center text-green-400 font-semibold text-lg">
+            Predicted Winner: {prediction}
+          </p>
+        )}
+
+        <button
+          onClick={handlePlaceBet}
+          className="w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl font-bold hover:scale-105 transform transition duration-200"
+        >
+          Place Bet (0.01 SOL)
+        </button>
       </div>
-
-      <button
-        onClick={handlePredict}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg w-full hover:opacity-90 hover:scale-105 transition"
-      >
-        Predict
-      </button>
-
-      {prediction && (
-        <p className="mt-4 text-xl font-semibold text-green-600">
-          🧠 Predicted Winner: {prediction}
-        </p>
-      )}
-
-      <button
-        onClick={handlePlaceBet}
-        className="mt-6 px-4 py-2 bg-green-500 text-white rounded-lg w-full hover:opacity-90 hover:scale-105 transition"
-      >
-        Place Bet (0.01 SOL)
-      </button>
     </div>
   );
 }
