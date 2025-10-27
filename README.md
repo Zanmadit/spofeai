@@ -25,11 +25,11 @@ Traditional platforms (1xBet, etc.) are centralized:
 ---
 
 ## After MVP
-1. **Интеграция ораклов Switchboard** — автоматическая проверка результатов матчей  
-2. **P2P ставки (pool-based)** — пользователи ставят друг против друга  
-3. **NFT-бейджи** — награды для лучших прогнозистов  
-4. **Мобильное приложение** с нативным Solana SDK  
-5. **DAO управление** — пользователи решают, какие матчи добавить  
+1. **Switchboard Oracle Integration** — automatic verification of match results  
+2. **P2P betting (pool-based)** — users bet against each other  
+3. **NFT badges** — rewards for the best forecasters  
+4. **Mobile app** with native Solana SDK  
+5. **DAO management** — users decide which matches to add  
 
 ---
 
