@@ -41,7 +41,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-Frontend (React+Vite)
+Frontend (React+Vite+Tailwind)
 ```
 cd frontend
 npm install
